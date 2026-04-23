@@ -16,10 +16,40 @@ description: Commit, push, and open a PR—all in one flow with a clear, quick P
    - _Never add secrets (.env, credentials, etc.)—warn & skip if found_
 
 4. **Craft commit message:**
-   - Type: `feat`, `fix`, `refactor`, etc.
+   - Types: `feat`, `fix`, `refactor`, `perf`, `docs`, `test`, `chore`, `build`, `ci`, `style`, `revert`
+   - No trailing period
    - Scope: _(optional)_
-   - Description: clear, present tense, ≤72 chars
+   - Description: clear, imperative and present tense, ≤50 chars
    - Format: `<type>[scope]: <description>`
+   - Body (only if needed): Skip entirely when subject is self-explanatory
+
+   #### Examples
+
+   **Diff:** Add new endpoint for user profile (with explanation)
+   - ❌ Incorrect:
+     ```
+     feat: add a new endpoint to get user profile information from the database
+     ```
+   - ✅ Correct:
+
+     ```
+     feat(api): add GET /users/:id/profile
+
+     Mobile client needs profile data without the full user payload
+     to reduce LTE bandwidth on cold-launch screens.
+
+     Closes #128
+     ```
+
+   **Diff:** Breaking API change
+   - ✅ Correct:
+
+     ```
+     feat(api)!: rename /v1/orders to /v1/checkout
+
+     BREAKING CHANGE: clients on /v1/orders must migrate to /v1/checkout
+     before 2026-06-01. Old route returns 410 after that date.
+     ```
 
 5. **Commit (run pre-commit hooks):**
    - `git commit -m "<type>[scope]: <description>"`
@@ -46,7 +76,7 @@ EOF
 )"
 ```
 
-**PR summary must be concise but also super easy to read and understand the context in one go - should take less than 2 minutes to read. Avoid fluff.**
+**Write the PR summary to be brief, clear, and immediately understandable. Anyone should grasp what changed and why, in under 2 minutes. Focus on context, impact, and intent, not process or implementation details. Avoid jargon, unnecessary detail, or filler—use plain language that's easy for any teammate to read. Prioritize clarity and relevance over technical precision.**
 
 8. **Report results:**
    - Print successful PR URL, branch, and commit summary.
