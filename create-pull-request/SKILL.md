@@ -78,6 +78,8 @@ EOF
 
 **Write the PR summary to be brief, clear, and immediately understandable. Anyone should grasp what changed and why, in under 2 minutes. Focus on context, impact, and intent, not process or implementation details. Avoid jargon, unnecessary detail, or filler—use plain language that's easy for any teammate to read. Prioritize clarity and relevance over technical precision.**
 
+**Never add `made in` `co-autor` or anything related to a agent model**
+
 8. **Report results:**
    - Print successful PR URL, branch, and commit summary.
 
