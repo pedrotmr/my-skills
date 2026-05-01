@@ -44,11 +44,11 @@ For each group include:
 - Actionability verdict (`needs action` / `no action needed`)
 - Assistant take (agree/challenge with reason)
 - Proposed fix outline (if actionable)
-- Severity rating (`S0`, `S1`, `S2`, `S3`):
-  - `S0` blocker: correctness/security/data loss; fix first
-  - `S1` high: likely regression/maintainability risk; fix early
-  - `S2` medium: improvement requested; fix when capacity allows
-  - `S3` low: polish/nit; batch last or leave with rationale
+- Severity rating (`Blocker`, `High`, `Medium`, `Low`):
+  - `Blocker` blocker: correctness/security/data loss; fix first
+  - `High` high: likely regression/maintainability risk; fix early
+  - `Medium` medium: improvement requested; fix when capacity allows
+  - `Low` low: polish/nit; batch last or leave with rationale
 
 ### 4) Present results in required order
 
@@ -81,11 +81,11 @@ When user selects groups:
 
 When user requests to fix everything, run this loop automatically:
 
-1. Build execution queue: actionable unresolved groups sorted by severity (`S0` -> `S3`) and dependency.
+1. Build execution queue: actionable unresolved groups sorted by severity (`Blocker` -> `Low`) and dependency.
 2. Process in batches:
    - Default batch size: 2 groups
-   - Use size 1 for risky/cross-cutting groups (`S0/S1` touching shared files)
-   - Allow size 3 only for clearly isolated `S2/S3` groups
+   - Use size 1 for risky/cross-cutting groups (`Blocker/High` touching shared files)
+   - Allow size 3 only for clearly isolated `Medium/Low` groups
 3. For each batch: implement -> run tests -> commit per group -> push -> update/resolve threads.
 4. Continue until queue is empty, then publish final status (addressed, skipped-with-rationale, still-blocked).
 
