@@ -78,6 +78,40 @@ Use only for `--pr` targets in Phase 0.
 
 ---
 
+## Context D — Spec Discovery
+
+> Locate the best available product/specification source for this review scope.
+>
+> Scope: [SCOPE — PR number, ref range, or "working tree"]
+> Explicit spec path: [SPEC_PATH_OR_NONE]
+> Change context: [PHASE_1_A]
+>
+> Search in this order:
+>
+> 1. If an explicit spec path was provided via `--spec` or `--plan`, verify it exists and return it.
+> 2. For PR scopes, inspect the PR body, linked issues, and referenced tickets for requirements, acceptance criteria, PRDs, or design docs.
+> 3. Inspect commit messages in the reviewed range for issue references (`#123`, `fixes #123`, `closes #123`), ticket keys, PRD paths, or spec paths.
+> 4. Search likely local spec locations: `docs/`, `specs/`, `rfcs/`, `adr/`, `.scratch/`, `.agent/`, `.agents/`, and issue-tracker docs. Prefer files whose names match the branch name, PR title keywords, ticket keys, or changed feature/module names.
+> 5. If a repo-specific issue tracker workflow is documented in `docs/agents/issue-tracker.md`, follow it to fetch referenced issue content.
+>
+> Return exactly one of these forms:
+>
+> `none`
+>
+> or
+>
+> ```yaml
+> spec_sources:
+>   - type: file | pr_body | issue | ticket | url
+>     location: <path, PR URL, issue URL, ticket key, or URL>
+>     confidence: high | medium | low
+>     why: <one sentence explaining why this is the originating spec>
+> ```
+>
+> Do not invent a spec. If candidates are weak or merely related background docs, return them with `confidence: low` rather than upgrading them.
+
+---
+
 ## Specialist 1 — Correctness & Bugs
 
 > You are a senior engineer scanning **only for real bugs** in this diff.
@@ -273,30 +307,32 @@ Use only for `--pr` targets in Phase 0.
 
 ---
 
-## Specialist 7 — Plan Alignment
+## Specialist 7 — Spec Alignment
 
-Skip this worker entirely if `--plan` was not provided.
+Skip this worker entirely if Context D returned `none`.
 
-> You are checking whether this diff implements the provided plan.
+> You are checking whether this diff implements the originating spec.
 >
 > Diff: [DIFF]
-> Plan file: [PLAN_PATH]
+> Spec sources: [PHASE_1_D]
 > Change context: [PHASE_1_A]
 >
-> Read the plan file. For each requirement or task in the plan:
+> Read every spec source. For each requirement, acceptance criterion, task, or explicitly requested behavior:
 >
 > 1. Is it implemented in the diff?
 > 2. Is it implemented as specified, or does the diff deviate?
 > 3. If it deviates, is the deviation explained (in PR body, commit message, or inline comment)?
 >
 > Flag:
-> - **Unimplemented requirements** — tasks the plan calls out that the diff does not address
-> - **Unexplained deviations** — implementation diverges from plan with no written rationale
-> - **Scope creep** — diff includes work beyond what the plan describes, with no rationale
+> - **Unimplemented requirements** — requirements the spec calls out that the diff does not address
+> - **Partial requirements** — requirements that are present but incomplete
+> - **Wrong implementation** — requirements that look implemented but behave differently from the spec
+> - **Unexplained deviations** — implementation diverges from spec with no written rationale
+> - **Scope creep** — diff includes work beyond what the spec describes, with no rationale
 >
 > Do not flag justified deviations. A deviation noted in the PR description, a commit message, or a code comment is justified — even if you disagree with it.
 >
-> Return findings in the schema (lens: `plan`). Quote the plan text in `evidence`. If none, return an empty list.
+> Return findings in the schema (lens: `spec`). Quote the spec text in `evidence`. If none, return an empty list.
 
 ---
 
@@ -309,6 +345,7 @@ Dispatch one instance per candidate finding from Phase 2.
 > Finding: [FINDING_YAML]
 > Relevant diff hunk: [DIFF_HUNK]
 > Convention file paths: [PHASE_1_B]
+> Spec sources: [PHASE_1_D]
 >
 > Use this rubric exactly:
 >
@@ -323,8 +360,9 @@ Dispatch one instance per candidate finding from Phase 2.
 > 1. If the finding's `location` is on a line not present in the diff, score `0`.
 > 2. If the finding could be caught by a linter, typechecker, compiler, or formatter (import errors, type errors, style, unused imports), score `0`.
 > 3. If the finding is a convention violation, open the cited convention file and verify the rule exists, is phrased as a requirement (not a preference), and applies to this diff. If not, score `0`.
-> 4. If the evidence quote does not actually support the claim, score `0` or `25` depending on severity.
-> 5. If the fix is vague and no concrete remediation is possible, score no higher than `50`.
+> 4. If the finding is a spec violation, open or inspect the cited spec source and verify the quoted requirement exists, is actually required, and applies to this diff. If not, score `0`.
+> 5. If the evidence quote does not actually support the claim, score `0` or `25` depending on severity.
+> 6. If the fix is vague and no concrete remediation is possible, score no higher than `50`.
 >
 > Return exactly one line, this format and nothing else:
 >

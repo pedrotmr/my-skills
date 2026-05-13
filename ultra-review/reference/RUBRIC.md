@@ -63,6 +63,7 @@ Every scoring call must apply all of these checks before assigning a score:
 - [ ] The `evidence` quote actually supports the `claim`.
 - [ ] The `fix` is concrete enough to act on. If it is vague, the score is capped at 50.
 - [ ] For convention findings: the cited file exists, the rule exists in that file, and the rule is phrased as a requirement (not a preference).
+- [ ] For spec findings: the cited spec source exists or is included in the review context, the quoted requirement exists, and the requirement applies to this diff.
 - [ ] The finding is not something a linter or typechecker would catch. If it is, the score is 0.
 - [ ] The finding describes a concrete failure mode, not a hypothetical "could be better."
 
@@ -76,6 +77,7 @@ Every scoring call must apply all of these checks before assigning a score:
 | New `O(N²)` loop over request body with N user-controlled up to 10k | 90 | Concrete workload, DOS risk. |
 | Import ordering differs from the rest of the file | 0 | Formatter's job. |
 | CLAUDE.md says "never import from `internal/` outside the owner package" and the diff does | 90 | Rule exists, phrased as a requirement, diff violates it. |
+| Spec says "export must include archived projects" and the diff only queries active projects | 90 | Requirement exists, diff implements a narrower behavior. |
 | `// TODO: handle errors` left in a function that already returns `Result` | 25 | Vague, no failure mode named. |
 | `eval()` on value from `req.body` | 100 | Confirmed RCE path. |
 

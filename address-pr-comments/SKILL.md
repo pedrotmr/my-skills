@@ -1,5 +1,5 @@
 ---
-name: gh-ultra-address-comments
+name: address-pr-comments
 description: Helps address review and issue comments on the open GitHub PR for the current branch using gh CLI. Use when the user asks to triage PR comments, organize unresolved feedback, group related review threads, validate whether comments are actionable, and apply fixes with commit/thread follow-up.
 ---
 

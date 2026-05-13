@@ -1,0 +1,4 @@
+interface:
+  display_name: "Ultra Babysit PR"
+  short_description: "Watch PRs, triage reviews, and fix CI"
+  default_prompt: "Use $ultra-babysit-pr to monitor the current PR, triage review comments, diagnose CI failures, push safe fixes, and keep watching until it is merged or blocked."

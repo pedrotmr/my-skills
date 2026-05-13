@@ -22,7 +22,8 @@ Non-goals: speed, token efficiency, running on trivial changes. Use a lighter re
 
 - `--pr <number|url>` — target a GitHub PR (uses `gh`)
 - `--diff <ref>` — target a local ref range (default: working tree vs `main`)
-- `--plan <path>` — optional plan/PRD/spec file for alignment checking
+- `--spec <path>` — optional plan/PRD/spec file for alignment checking
+- `--plan <path>` — alias for `--spec`
 - `--output <path>` — report file path (default: `./ultra-review-<scope-slug>.md`)
 - `--post` — after writing the report, also post it as a PR comment (requires `--pr`); off by default
 
@@ -34,7 +35,7 @@ Six phases. Phases 1, 2, and 3 each dispatch multiple workers in parallel — is
 
 ```
 Phase 0: Eligibility gate    (1 worker; PR targets only)
-Phase 1: Context pass        (3 parallel workers)
+Phase 1: Context pass        (4 parallel workers)
 Phase 2: Specialist lanes    (7 parallel workers)
 Phase 3: Confidence scoring  (N parallel workers, one per candidate)
 Phase 4: Consolidation       (deterministic; no worker)
@@ -51,13 +52,14 @@ Run the eligibility worker (see `reference/PROMPTS.md` → "Eligibility"). It ve
 
 ### Phase 1 — Context Pass
 
-Dispatch the three context workers in parallel (`reference/PROMPTS.md` → "Context A", "Context B", "Context C"):
+Dispatch the four context workers in parallel (`reference/PROMPTS.md` → "Context A" through "Context D"):
 
 - **A — Change Summary.** Compact description of what changed and why, file list with LOC, referenced tickets, language/framework mix.
 - **B — Convention Discovery.** Paths (not contents) to CLAUDE.md, AGENTS.md, README, CONTRIBUTING, linter/editor config relevant to changed files.
 - **C — Historical Signals.** Recent commits, blame for modified regions, prior PRs touching the same files.
+- **D — Spec Discovery.** Locate the originating issue, PRD, plan, ticket, or spec using explicit `--spec/--plan`, PR metadata, commit messages, branch names, and likely spec directories.
 
-Cache all three outputs. They feed Phase 2 and Phase 3.
+Cache all four outputs. They feed Phase 2 and Phase 3.
 
 ### Phase 2 — Seven Specialist Lanes
 
@@ -69,13 +71,13 @@ Dispatch all seven lanes in parallel (`reference/PROMPTS.md` → "Specialist 1" 
 4. **Performance**
 5. **Readability & Simplicity**
 6. **Convention Adherence** (against files found in Phase 1 B)
-7. **Plan Alignment** (skip entirely if `--plan` not provided)
+7. **Spec Alignment** (against explicit or discovered spec sources from Phase 1 D; skip if Phase 1 D returns `none`)
 
 Each lane returns **candidate findings only**, in the schema below. Independent reasoning is what makes multi-lane signal trustworthy — do not let any lane see another lane's output during Phase 2.
 
 ### Phase 3 — Per-Finding Confidence Scoring
 
-For every candidate finding from Phase 2, dispatch a parallel scoring worker (`reference/PROMPTS.md` → "Scorer"). Each scorer receives the finding, the relevant diff hunk, and the convention file paths from Phase 1 B. Each finding is scored independently.
+For every candidate finding from Phase 2, dispatch a parallel scoring worker (`reference/PROMPTS.md` → "Scorer"). Each scorer receives the finding, the relevant diff hunk, the convention file paths from Phase 1 B, and the spec sources from Phase 1 D. Each finding is scored independently.
 
 **Cross-lane confirmation boost.** Before filtering, cluster findings by `location` (±3 lines) with overlapping `claim`. If a cluster contains findings from two or more distinct lanes, raise each member's final score by +10 (cap at 100). Independent agreement across lanes is strong evidence.
 
@@ -106,7 +108,7 @@ Every Phase 2 lane returns findings in exactly this shape:
 ```yaml
 - title: <short imperative>
   severity: Critical | Important | Suggestion
-  lens: correctness | security | architecture | performance | readability | convention | plan
+  lens: correctness | security | architecture | performance | readability | convention | spec
   location: path:line  OR  path:startLine-endLine
   claim: <what is wrong>
   impact: <concrete failure mode — who is affected, what breaks>
@@ -138,13 +140,19 @@ Write to `--output` path. Use this structure exactly — all sections appear eve
 **Verdict:** APPROVE | REQUEST CHANGES | COMMENT
 **Generated:** <ISO timestamp>
 **Scope:** <PR #N with URL, or commit range, or working tree>
-**Lenses run:** Correctness, Security, Architecture, Performance, Readability, Convention[, Plan]
+**Lenses run:** Correctness, Security, Architecture, Performance, Readability, Convention[, Spec]
 **Findings:** <N> Critical, <N> Important, <N> Suggestions
 **Threshold:** findings scored < 80 were dropped
 
 ## Summary
 
 <2-3 sentence overview of the change and overall assessment>
+
+## Axis Summary
+
+- **Spec:** pass | fail | not available — <spec source paths/URLs or reason unavailable>
+- **Standards:** pass | fail — <convention source paths or `none found`>
+- **Repo patterns:** pass | fail — <short note from architecture/convention findings>
 
 ## Critical (<count>)
 
@@ -179,11 +187,11 @@ Write to `--output` path. Use this structure exactly — all sections appear eve
 
 - Tests reviewed: <yes/no + short note>
 - Security-sensitive paths touched: <yes/no>
-- Plan alignment checked: <yes — path / no — not provided>
+- Spec alignment checked: <yes — source(s) / no — no spec found>
 
 ## Process Log
 
-- Context workers: 3
+- Context workers: 4
 - Specialist lanes: <6 or 7>
 - Candidate findings: <N>
 - Dropped (score < 80): <N>
@@ -207,7 +215,7 @@ Found <N> issues (<N> critical, <N> important, <N> suggestions).
   <permalink with full commit SHA, format: https://github.com/<owner>/<repo>/blob/<sha>/<path>#L<start>-L<end>>
 
 <If zero findings:>
-No blocking issues found. Checked across correctness, security, architecture, performance, readability, convention[, plan].
+No blocking issues found. Checked across correctness, security, architecture, performance, readability, convention[, spec].
 
 Full report: <link to file path or artifact>
 ```
@@ -234,7 +242,7 @@ Permalink rules (critical for rendering):
 
 ## Cost Note
 
-One ultra review typically dispatches 3 context workers, 6–7 specialist lanes, and 5–30 scoring workers — roughly 14–40 delegations per run. This is deliberate: reliability and determinism are the product. For smaller changes or routine work, use a lighter review skill instead.
+One ultra review typically dispatches 4 context workers, 6–7 specialist lanes, and 5–30 scoring workers — roughly 15–41 delegations per run. This is deliberate: reliability and determinism are the product. For smaller changes or routine work, use a lighter review skill instead.
 
 ## See Also
 
